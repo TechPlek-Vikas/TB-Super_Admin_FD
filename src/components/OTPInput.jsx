@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useRef, useEffect } from "react";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
-import { Button, Stack } from "@mui/material";
+import { Button, Stack, Typography } from "@mui/material";
 import useToggle from "../hooks/useToggle";
 import { Link } from "react-router-dom";
 import useLoading from "../hooks/useLoading";
@@ -62,9 +62,6 @@ const OTPInput = ({
         inputRefs.current[index + 1].focus();
       }
 
-      //   if (newOtp.every((digit) => digit !== "")) {
-      //     onComplete(newOtp.join(""));
-      //   }
       onComplete(newOtp.join(""));
     }
   };
@@ -90,7 +87,7 @@ const OTPInput = ({
     }
   };
 
-  const handleFocus = (index) => (e) => {
+  const handleFocus = () => (e) => {
     // Select the text in the input field when it gains focus
     e.target.select();
   };
@@ -141,19 +138,13 @@ const OTPInput = ({
         </Box>
 
         {!isToggled ? (
-          <div
-            style={{
-              fontWeight: "bold",
-              color: "#333",
-              textAlign: "center",
-            }}
-          >
+          <Typography variant="caption" textAlign={"center"}>
             Resend OTP in :{" "}
             <span style={{ color: "#e74c3c" }}>
               {formatTime(remainingTime)}
             </span>{" "}
             seconds
-          </div>
+          </Typography>
         ) : retryCount < maxOTPRetryLimit ? ( // Hide the button if retry limit is reached
           <div style={{ textAlign: "center" }}>
             <Button
@@ -164,6 +155,7 @@ const OTPInput = ({
               component={Link} // Make it behave like a Link
               to="#" // Add the URL if needed
               disabled={isLoading}
+              title="Resend OTP"
             >
               Resend OTP
             </Button>
