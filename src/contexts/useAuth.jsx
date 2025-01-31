@@ -1,11 +1,12 @@
-import PropTypes from "prop-types";
-import {
+import PropTypes from "prop-types";import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useState,
 } from "react"; // Create an AuthContext
+import { TOKEN_KEY } from "../constants";
+import axiosInstance from "../utils/axios";
 const AuthContext = createContext();
 
 // AuthProvider component to provide authentication state
@@ -19,7 +20,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if user is logged in by checking localStorage/sessionStorage or your preferred method
-    const token = localStorage.getItem("authToken"); // Example check
+    const token = localStorage.getItem(TOKEN_KEY); // Example check
     if (token) {
       setIsAuthenticated(true);
     }
@@ -29,29 +30,48 @@ export const AuthProvider = ({ children }) => {
     // Call your login logic and set the authentication state
     await new Promise((resolve) => setTimeout(resolve, 3000));
     setIsAuthenticated(true);
-    localStorage.setItem("authToken", "true");
+    localStorage.setItem(TOKEN_KEY, "true");
   };
 
   const logout = () => {
     // Call your logout logic and remove authentication state
     setIsAuthenticated(false);
-    localStorage.removeItem("authToken");
+    localStorage.removeItem(TOKEN_KEY);
   };
 
   const signInWithOTP = async ({ emailOrPhone, otp }) => {
-    // TODO : VERIFY OTP API
-    console.table({ emailOrPhone, otp });
-    console.log("Verifying OTP: ", otp);
-    // Call your login logic and set the authentication state
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    setIsAuthenticated(true);
-    localStorage.setItem("authToken", "true");
+    try {
+      console.table({ emailOrPhone, otp });
+      const response = await axiosInstance.post(
+        "/user/auth/register-or-login",
+        {
+          emailOrPhone,
+          otp,
+        }
+      );
+      setIsAuthenticated(true);
+      const token = response.data.data.authToken;
+      console.log(`🚀 ~ signInWithOTP ~ token:`, token);
+      localStorage.setItem(TOKEN_KEY, "true");
+    } catch (error) {
+      console.log("Error verifying OTP:", error);
+      throw error;
+    }
   };
 
   const generateOTP = async (emailOrPhone) => {
-    // TODO : GENERATE OTP API
-    console.table({ emailOrPhone });
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    try {
+      // TODO : GENERATE OTP API
+      console.table({ emailOrPhone });
+      // await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const response = await axiosInstance.post("/user/auth/otp", {
+        emailOrPhone,
+      });
+      console.log(`🚀 ~ generateOTP ~ response:`, response);
+    } catch (error) {
+      console.log("Error generating OTP:", error);
+    }
   };
 
   return (

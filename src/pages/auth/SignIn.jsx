@@ -1,4 +1,5 @@
-import PropTypes from "prop-types";import {
+import PropTypes from "prop-types";
+import {
   Button,
   Box,
   Typography,
@@ -16,8 +17,9 @@ import useToggle from "../../hooks/useToggle";
 import { Form, FormikProvider, useFormik } from "formik";
 import * as Yup from "yup";
 import { EMAIL_REGEX, PHONE_REGEX } from "../../constants";
+import useToast from "../../hooks/useToast";
 
-const OTP_LENGTH = 4;
+const OTP_LENGTH = 6;
 const OTP_EXPIRY_TIME_IN_SECONDS = 5;
 
 const SignIn = () => {
@@ -45,6 +47,7 @@ const getOTPValidationSchema = Yup.object({
 });
 const SignInForm = ({ handleOTPSentChange }) => {
   const { handleEmailOrPhoneChange, generateOTP } = useAuth();
+  const { success, errorFn } = useToast();
 
   const formik = useFormik({
     initialValues: {
@@ -60,8 +63,10 @@ const SignInForm = ({ handleOTPSentChange }) => {
         handleEmailOrPhoneChange(values.emailOrPhone);
         console.log("OTP generated for: ", values.emailOrPhone);
         resetForm();
+        success("OTP sent successfully");
       } catch (error) {
         console.error("Error generating OTP:", error);
+        errorFn("Failed to generate OTP");
       }
     },
   });
@@ -114,8 +119,10 @@ const OTPVerification = () => {
   const { emailOrPhone, signInWithOTP } = useAuth();
   const [otp, setOtp] = useState("");
   const { isLoading, updateLoading } = useLoading();
-
+  const { isToggled: resetOTP, setToggleState: updateResetOTP } = useToggle();
   const navigate = useNavigate();
+
+  const { success, errorFn } = useToast();
 
   const handleOTPComplete = (enteredOTP) => {
     setOtp(enteredOTP);
@@ -127,9 +134,14 @@ const OTPVerification = () => {
 
       updateLoading(true);
       await signInWithOTP({ emailOrPhone, otp });
+      updateResetOTP(false);
       navigate("/", { replace: true });
+      success("Sign In successfully");
     } catch (error) {
       console.log("Error verifying OTP:", error);
+      updateResetOTP(true);
+      setOtp("");
+      errorFn("Invalid OTP");
     } finally {
       updateLoading(false);
     }
@@ -147,6 +159,8 @@ const OTPVerification = () => {
         otpExpiryTimeInSeconds={OTP_EXPIRY_TIME_IN_SECONDS}
         userCredential={emailOrPhone}
         maxOTPRetryLimit={2}
+        resetOTP={resetOTP}
+        updateResetOTP={updateResetOTP}
       />
 
       <Button
@@ -163,12 +177,6 @@ const OTPVerification = () => {
       </Button>
     </Stack>
   );
-};
-
-OTPVerification.propTypes = {
-  onVerifyOTP: PropTypes.func.isRequired,
-  otpLength: PropTypes.number.isRequired,
-  loading: PropTypes.bool.isRequired,
 };
 
 const SignInLayout = ({ children }) => {

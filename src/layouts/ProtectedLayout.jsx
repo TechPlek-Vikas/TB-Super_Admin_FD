@@ -1,4 +1,4 @@
-import PropTypes from "prop-types";import {
+import {
   AppBar,
   Box,
   Button,
@@ -6,15 +6,15 @@ import PropTypes from "prop-types";import {
   CssBaseline,
   Divider,
   Drawer,
-  List,
   ListItem,
   ListItemText,
   Toolbar,
-  Typography,
+  Typography
 } from "@mui/material";
 import { useState } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/useAuth";
+import useToast from "../hooks/useToast";
 
 const drawerWidth = 240;
 
@@ -30,18 +30,23 @@ function ProtectedLayout() {
   const [drawerOpen, setDrawerOpen] = useState(true); // State to control drawer visibility
   const navigate = useNavigate();
 
+  // eslint-disable-next-line no-unused-vars
   const handleDrawerToggle = () => {
     setDrawerOpen((prevOpen) => !prevOpen); // Toggle drawer visibility
   };
 
   const { logout } = useAuth();
+  const { success, errorFn } = useToast();
 
   const logoutHandler = async () => {
     try {
       await logout();
+      success("Logout successfully");
+
       navigate("/login");
     } catch (error) {
       console.error("Error logging out:", error);
+      errorFn("Failed to logout");
     }
   };
 

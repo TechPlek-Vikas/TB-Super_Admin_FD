@@ -6,6 +6,8 @@ import { Button, Stack, Typography } from "@mui/material";
 import useToggle from "../hooks/useToggle";
 import { Link } from "react-router-dom";
 import useLoading from "../hooks/useLoading";
+import { useAuth } from "../contexts/useAuth";
+import useToast from "../hooks/useToast";
 
 const MAX_OTP_RETRY_LIMIT = 3;
 
@@ -15,6 +17,8 @@ const OTPInput = ({
   otpExpiryTimeInSeconds,
   userCredential,
   maxOTPRetryLimit = MAX_OTP_RETRY_LIMIT,
+  resetOTP,
+  updateResetOTP,
 }) => {
   const [otp, setOtp] = useState(Array(numFields).fill(""));
   const inputRefs = useRef([]);
@@ -23,6 +27,9 @@ const OTPInput = ({
   const { isToggled, setToggleState } = useToggle();
   const [retryCount, setRetryCount] = useState(0);
   const { isLoading, updateLoading } = useLoading();
+
+  const { generateOTP } = useAuth();
+  const { success, errorFn } = useToast();
 
   useEffect(() => {
     if (remainingTime > 0) {
@@ -35,6 +42,10 @@ const OTPInput = ({
       setToggleState(true);
     }
   }, [remainingTime, setToggleState]);
+
+  useEffect(() => {
+    if (resetOTP) setOtp(Array(numFields).fill(""));
+  }, [resetOTP, numFields]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -63,6 +74,9 @@ const OTPInput = ({
       }
 
       onComplete(newOtp.join(""));
+      if (newOtp.length === numFields) {
+        updateResetOTP(false);
+      }
     }
   };
 
@@ -97,17 +111,20 @@ const OTPInput = ({
 
     updateLoading(true);
     try {
-      console.log(
-        `Resending OTP for: ${userCredential}. Attempt: ${retryCount + 1}`
-      );
-      // Simulate an API call for OTP resending
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Simulate delay
+      // console.log(
+      //   `Resending OTP for: ${userCredential}. Attempt: ${retryCount + 1}`
+      // );
+      await generateOTP(userCredential);
       setRemainingTime(otpExpiryTimeInSeconds);
       setToggleState(false);
+      updateResetOTP(false);
       setRetryCount((P) => P + 1);
+      success("OTP resent successfully");
     } catch (error) {
       console.error("Error resending OTP:", error);
+      setOtp(Array(numFields).fill(""));
       setRemainingTime(0); // Set remaining time to 0 if resending fails
+      errorFn("Failed to resend OTP");
     } finally {
       updateLoading(false);
     }
@@ -126,6 +143,7 @@ const OTPInput = ({
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={handlePaste}
               onFocus={handleFocus(index)} // Add onFocus handler
+              autoComplete="off"
               inputProps={{
                 maxLength: 1,
                 style: { textAlign: "center" },
@@ -183,6 +201,8 @@ OTPInput.propTypes = {
   otpExpiryTimeInSeconds: PropTypes.number.isRequired,
   userCredential: PropTypes.string.isRequired,
   maxOTPRetryLimit: PropTypes.number,
+  resetOTP: PropTypes.bool,
+  updateResetOTP: PropTypes.func,
 };
 
 export default OTPInput;
