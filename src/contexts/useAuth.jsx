@@ -7,7 +7,20 @@ import PropTypes from "prop-types";import {
 } from "react"; // Create an AuthContext
 import { TOKEN_KEY } from "../constants";
 import axiosInstance from "../utils/axios";
+import { jwtDecode } from "jwt-decode";
+import useToast from "../hooks/useToast";
+
 const AuthContext = createContext();
+
+const verifyToken = (token) => {
+  if (!token) {
+    return false;
+  }
+  const decoded = jwtDecode(token);
+  console.log(`🚀 ~ verifyToken ~ decoded:`, decoded);
+
+  return decoded.exp > Date.now() / 1000;
+};
 
 // AuthProvider component to provide authentication state
 export const AuthProvider = ({ children }) => {
@@ -18,13 +31,23 @@ export const AuthProvider = ({ children }) => {
     setEmailOrPhone(value);
   }, []);
 
+  const { success } = useToast();
+
   useEffect(() => {
     // Check if user is logged in by checking localStorage/sessionStorage or your preferred method
     const token = localStorage.getItem(TOKEN_KEY); // Example check
-    if (token) {
+
+    if (!token) return;
+
+    if (verifyToken(token)) {
       setIsAuthenticated(true);
+    } else {
+      console.log("Session expired");
+      success("Session Expired");
+      setIsAuthenticated(false);
+      localStorage.removeItem(TOKEN_KEY);
     }
-  }, []);
+  }, [success]);
 
   const signIn = async () => {
     // Call your login logic and set the authentication state
@@ -52,7 +75,8 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       const token = response.data.data.authToken;
       console.log(`🚀 ~ signInWithOTP ~ token:`, token);
-      localStorage.setItem(TOKEN_KEY, "true");
+      // localStorage.setItem(TOKEN_KEY, "true");
+      localStorage.setItem(TOKEN_KEY, token);
     } catch (error) {
       console.log("Error verifying OTP:", error);
       throw error;
